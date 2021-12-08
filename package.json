@@ -1,0 +1,45 @@
+{
+  "name": "@ledgerhq/hw-app-conflux",
+  "version": "1.0.0",
+  "description": "Ledger Hardware Wallet Conflux Application API",
+  "keywords": [
+    "Ledger",
+    "LedgerWallet",
+    "Conflux",
+    "cfx",
+    "NanoS",
+    "Hardware Wallet"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Conflux-Chain/hw-app-conflux"
+  },
+  "bugs": {
+    "url": "https://github.com/Conflux-Chain/hw-app-conflux/issues"
+  },
+  "homepage": "https://github.com/Conflux-Chain/hw-app-conflux",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "lib/Conflux.js",
+  "types": "lib/Conflux.d.ts",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ledgerhq/cryptoassets": "^6.18.0",
+    "@ledgerhq/errors": "^6.10.0",
+    "@ledgerhq/hw-transport": "^6.11.2",
+    "@ledgerhq/logs": "^6.10.0",
+    "axios": "^0.24.0",
+    "bip32-path": "^0.4.2",
+    "js-conflux-sdk": "^2.0.0-beta.10"
+  },
+  "scripts": {
+    "clean": "rm -rf lib/",
+    "build": "yarn tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "ts-jest": "^27.1.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.2"
+  }
+}
