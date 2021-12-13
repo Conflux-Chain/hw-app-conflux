@@ -1,5 +1,5 @@
 
-## @ledgerhq/hw-app-conflux
+## @fluent-wallet/hw-app-conflux
 
 Ledger Hardware Wallet Conflux JavaScript bindings.
 
@@ -9,7 +9,7 @@ Ledger Hardware Wallet Conflux JavaScript bindings.
 
 #### Table of Contents
 
-- [@ledgerhq/hw-app-conflux](#ledgerhqhw-app-conflux)
+- [@fluent-wallet/hw-app-conflux](#fluent-wallethw-app-conflux)
 - [API](#api)
     - [Table of Contents](#table-of-contents)
   - [Conflux](#conflux)
@@ -35,7 +35,7 @@ Conflux API
 #### Examples
 
 ```javascript
-import Cfx from "@ledgerhq/hw-app-conflux";
+import Cfx from "@fluent-wallet/hw-app-conflux";
 const cfx = new Cfx(transport)
 ```
 

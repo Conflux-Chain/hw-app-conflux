@@ -1,6 +1,6 @@
 {
-  "name": "@ledgerhq/hw-app-conflux",
-  "version": "1.0.0",
+  "name": "@fluent-wallet/hw-app-conflux",
+  "version": "0.0.1",
   "description": "Ledger Hardware Wallet Conflux Application API",
   "keywords": [
     "Ledger",
