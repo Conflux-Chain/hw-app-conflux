@@ -1,4 +1,4 @@
-import { foreach } from "./utils";
+import { foreach,splitPath } from "./utils";
 import type Transport from "@ledgerhq/hw-transport";
 import { sign } from "js-conflux-sdk/dist/js-conflux-sdk.umd.min.js";
 import BIPPath from "bip32-path";
@@ -56,7 +56,12 @@ export default class Conflux {
     address: string;
     chainCode?: string;
   }> {
-    const pathBuffer = this.pathToBuffer(path);
+    const paths = splitPath(path);
+    const pathBuffer = Buffer.alloc(1 + paths.length * 4);
+    pathBuffer[0] = paths.length;
+    paths.forEach((element, index) => {
+      pathBuffer.writeUInt32BE(element, 1 + 4 * index);
+    });
     return this.transport
       .send(
         0xe0,
@@ -68,8 +73,8 @@ export default class Conflux {
       .then((response) => {
         const publicKeyLength = response[0];
         const publicKey = response
-          .slice(1, 1 + publicKeyLength)
-          .toString("hex");
+          .slice(2, 1 + publicKeyLength)
+          .toString("hex");// remove the prefix:04, because 04 means the uncompressed public key
 
         return {
           publicKey,
