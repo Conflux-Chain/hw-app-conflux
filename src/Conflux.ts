@@ -1,6 +1,6 @@
 import { foreach,splitPath } from "./utils";
 import type Transport from "@ledgerhq/hw-transport";
-import { sign } from "js-conflux-sdk/dist/js-conflux-sdk.umd.min.js";
+import { sign,format } from "js-conflux-sdk";
 import BIPPath from "bip32-path";
 
 const remapTransactionRelatedErrors = (e) => {
@@ -41,53 +41,64 @@ export default class Conflux {
   /**
    * get Conflux address for a given BIP 32 path.
    * @param path a path in BIP 32 format
-   * @option boolDisplay optionally enable or not the display
+   * @option chainId optionally enable or not the display the address
    * @option boolChaincode optionally enable or not the chaincode request
    * @return an object with a publicKey, address and (optionally) chainCode
    * @example
    * cfx.getAddress("44'/503'/0'/0/0").then(o => o.publicKey)
+   * cfx.getAddress("44'/503'/0'/0/0",1029).then(o => o.publicKey): show mainnet address
+   * cfx.getAddress("44'/503'/0'/0/0",1).then(o => o.publicKey): show testnet address
    */
   getAddress(
     path: string,
-    boolDisplay?: boolean,
+    chainId?: number,
     boolChaincode?: boolean
   ): Promise<{
     publicKey: string;
     address: string;
     chainCode?: string;
   }> {
+    //path buffer
     const paths = splitPath(path);
-    const pathBuffer = Buffer.alloc(1 + paths.length * 4);
-    pathBuffer[0] = paths.length;
+    let buffer = Buffer.alloc(1 + paths.length * 4);
+    buffer[0] = paths.length;
     paths.forEach((element, index) => {
-      pathBuffer.writeUInt32BE(element, 1 + 4 * index);
+      buffer.writeUInt32BE(element, 1 + 4 * index);
     });
+    
+    //chainID buffer
+    if(chainId){
+      const chainIdBuffer = Buffer.alloc(4);
+      chainIdBuffer.writeUInt32BE(chainId)
+      buffer=Buffer.concat([buffer,chainIdBuffer])
+    }
+
     return this.transport
       .send(
         0xe0,
         0x02,
-        boolDisplay ? 0x01 : 0x00,
+        chainId ? 0x01 : 0x00,
         boolChaincode ? 0x01 : 0x00,
-        pathBuffer
+        buffer
       )
       .then((response) => {
         const publicKeyLength = response[0];
         const publicKey = response
           .slice(2, 1 + publicKeyLength)
           .toString("hex");// remove the prefix:04, because 04 means the uncompressed public key
-
+        let address="0x" +sign['publicKeyToAddress'](Buffer.from(publicKey, "hex")).toString("hex")//hex address
+        if(chainId){
+          address=format.address(address,chainId)//CIP-37 address
+        }
+        let chainCode;
+        if(boolChaincode){
+          const chainCodeLength=response[1+publicKeyLength]
+          chainCode=response.slice(1+publicKeyLength+1,1+publicKeyLength+1+chainCodeLength).toString("hex")
+        }
         return {
           publicKey,
-          address:
-            "0x" +
-            sign
-              .publicKeyToAddress(Buffer.from(publicKey, "hex"))
-              .toString("hex"),
-          chainCode: boolChaincode
-            ? response
-                .slice(1 + publicKeyLength + 1, 1 + publicKeyLength + 1 + 32)
-                .toString("hex")
-            : undefined,
+          address,
+          chainCode
         };
       });
   }
