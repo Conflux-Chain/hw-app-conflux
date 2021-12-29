@@ -47,7 +47,7 @@ export default class Conflux {
     this.chainId = chainId || CHAINID.MAINNET;
     transport.decorateAppAPIMethods(
       this,
-      ["getAddress", "signTransaction"],
+      ["getAddress", "signTransaction","getAppConfiguration","signPersonalMessage"],
       scrambleKey
     );
   }
