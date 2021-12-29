@@ -104,14 +104,14 @@ export default class Conflux {
         const publicKey = response
           .slice(2, 1 + publicKeyLength)
           .toString("hex"); // remove the prefix:04, because 04 means the uncompressed public key
-        let address =
+
+        const address = format.address(
           "0x" +
-          sign["publicKeyToAddress"](Buffer.from(publicKey, "hex")).toString(
-            "hex"
-          ); //hex address
-        if (boolAddress) {
-          address = format.address(address, this.chainId); //CIP-37 address
-        }
+            sign["publicKeyToAddress"](Buffer.from(publicKey, "hex")).toString(
+              "hex"
+            ),
+          this.chainId
+        ); //CIP-37 address
         let chainCode;
         if (boolChaincode) {
           const chainCodeLength = response[1 + publicKeyLength];
@@ -262,7 +262,7 @@ export default class Conflux {
         paths.forEach((element, index) => {
           buffer.writeUInt32BE(element, 1 + 4 * index);
         });
-        buffer.writeUInt32BE(this.chainId || 1029, 1 + paths.length * 4);
+        buffer.writeUInt32BE(this.chainId, 1 + paths.length * 4);
         buffer.writeUInt32BE(message.length, 1 + 4 * paths.length + 4);
         message.copy(
           buffer,
