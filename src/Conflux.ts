@@ -1,6 +1,6 @@
-import { foreach } from "./utils";
+import { foreach, splitPath } from "./utils";
 import type Transport from "@ledgerhq/hw-transport";
-import { sign } from "js-conflux-sdk/dist/js-conflux-sdk.umd.min.js";
+import { sign, format } from "js-conflux-sdk";
 import BIPPath from "bip32-path";
 
 const remapTransactionRelatedErrors = (e) => {
@@ -12,6 +12,18 @@ const remapTransactionRelatedErrors = (e) => {
 
   return e;
 };
+
+const INS = {
+  GET_ADDRESS: 0x02,
+  SIGN_TX: 0x03,
+  SIGN_PERSONAL_MESSAGE: 0x04,
+};
+
+const CHAINID = {
+  MAINNET: 1029,
+  TESTNET: 1,
+};
+
 /**
  * Conflux API
  *
@@ -25,15 +37,22 @@ const remapTransactionRelatedErrors = (e) => {
 
 export default class Conflux {
   transport: Transport;
-
+  chainId: number;
   constructor(
     transport: Transport,
+    chainId: number,
     scrambleKey = "conflux_default_scramble_key"
   ) {
     this.transport = transport;
+    this.chainId = chainId || CHAINID.MAINNET;
     transport.decorateAppAPIMethods(
       this,
-      ["getAddress", "signTransaction"],
+      [
+        "getAddress",
+        "signTransaction",
+        "getAppConfiguration",
+        "signPersonalMessage",
+      ],
       scrambleKey
     );
   }
@@ -41,48 +60,72 @@ export default class Conflux {
   /**
    * get Conflux address for a given BIP 32 path.
    * @param path a path in BIP 32 format
-   * @option boolDisplay optionally enable or not the display
+   * @option boolAddress optionally enable or not the display the address
    * @option boolChaincode optionally enable or not the chaincode request
    * @return an object with a publicKey, address and (optionally) chainCode
    * @example
    * cfx.getAddress("44'/503'/0'/0/0").then(o => o.publicKey)
+   * cfx.getAddress("44'/503'/0'/0/0",true).then(o => o.publicKey): show mainnet address
    */
   getAddress(
     path: string,
-    boolDisplay?: boolean,
+    boolAddress?: boolean,
     boolChaincode?: boolean
   ): Promise<{
     publicKey: string;
     address: string;
     chainCode?: string;
   }> {
-    const pathBuffer = this.pathToBuffer(path);
+    //path buffer
+    const paths = splitPath(path);
+    let buffer = Buffer.alloc(1 + paths.length * 4);
+    buffer[0] = paths.length;
+    paths.forEach((element, index) => {
+      buffer.writeUInt32BE(element, 1 + 4 * index);
+    });
+
+    //chainID buffer
+    if (boolAddress) {
+      const chainIdBuffer = Buffer.alloc(4);
+      chainIdBuffer.writeUInt32BE(this.chainId);
+      buffer = Buffer.concat([buffer, chainIdBuffer]);
+    }
+
     return this.transport
       .send(
         0xe0,
-        0x02,
-        boolDisplay ? 0x01 : 0x00,
+        INS.GET_ADDRESS,
+        boolAddress ? 0x01 : 0x00,
         boolChaincode ? 0x01 : 0x00,
-        pathBuffer
+        buffer
       )
       .then((response) => {
         const publicKeyLength = response[0];
         const publicKey = response
-          .slice(1, 1 + publicKeyLength)
-          .toString("hex");
+          .slice(2, 1 + publicKeyLength)
+          .toString("hex"); // remove the prefix:04, because 04 means the uncompressed public key
 
+        const address = format.address(
+          "0x" +
+            sign["publicKeyToAddress"](Buffer.from(publicKey, "hex")).toString(
+              "hex"
+            ),
+          this.chainId
+        ); //CIP-37 address
+        let chainCode;
+        if (boolChaincode) {
+          const chainCodeLength = response[1 + publicKeyLength];
+          chainCode = response
+            .slice(
+              1 + publicKeyLength + 1,
+              1 + publicKeyLength + 1 + chainCodeLength
+            )
+            .toString("hex");
+        }
         return {
           publicKey,
-          address:
-            "0x" +
-            sign
-              .publicKeyToAddress(Buffer.from(publicKey, "hex"))
-              .toString("hex"),
-          chainCode: boolChaincode
-            ? response
-                .slice(1 + publicKeyLength + 1, 1 + publicKeyLength + 1 + 32)
-                .toString("hex")
-            : undefined,
+          address,
+          chainCode,
         };
       });
   }
@@ -134,7 +177,7 @@ export default class Conflux {
 
     return foreach(toSend, (data, i) =>
       this.transport
-        .send(0xe0, 0x03, i === 0 ? 0x00 : 0x80, 0x00, data)
+        .send(0xe0, INS.SIGN_TX, i === 0 ? 0x00 : 0x80, 0x00, data)
         .then((apduResponse) => {
           response = apduResponse;
         })
@@ -180,6 +223,83 @@ export default class Conflux {
       version,
       flags,
     };
+  }
+
+  /**
+   * You can sign a message according to cfx_sign RPC call and retrieve v, r, s given the message and the BIP 32 path of the account to sign.
+   * @example cfx.signPersonalMessage("44'/503'/0'/0/0", Buffer.from("test").toString("hex"))
+   * @param path hdPath
+   * @param messageHex the hex string of the message
+   * @returns
+   */
+  signPersonalMessage(
+    path: string,
+    messageHex: string
+  ): Promise<{
+    v: number;
+    s: string;
+    r: string;
+  }> {
+    const paths = splitPath(path);
+    let offset = 0;
+    const message = Buffer.from(messageHex, "hex");
+    const toSend: Buffer[] = [];
+    let response;
+
+    while (offset !== message.length) {
+      const maxChunkSize =
+        offset === 0 ? 150 - 1 - paths.length * 4 - 4 - 4 : 150;
+      const chunkSize =
+        offset + maxChunkSize > message.length
+          ? message.length - offset
+          : maxChunkSize;
+      const buffer = Buffer.alloc(
+        offset === 0 ? 1 + paths.length * 4 + 4 + 4 + chunkSize : chunkSize
+      );
+
+      if (offset === 0) {
+        buffer[0] = paths.length;
+        paths.forEach((element, index) => {
+          buffer.writeUInt32BE(element, 1 + 4 * index);
+        });
+        buffer.writeUInt32BE(this.chainId, 1 + paths.length * 4);
+        buffer.writeUInt32BE(message.length, 1 + 4 * paths.length + 4);
+        message.copy(
+          buffer,
+          1 + 4 * paths.length + 4 + 4,
+          offset,
+          offset + chunkSize
+        );
+      } else {
+        message.copy(buffer, 0, offset, offset + chunkSize);
+      }
+
+      toSend.push(buffer);
+      offset += chunkSize;
+    }
+
+    return foreach(toSend, (data, i) =>
+      this.transport
+        .send(
+          0xe0,
+          INS.SIGN_PERSONAL_MESSAGE,
+          i === 0 ? 0x00 : 0x80,
+          0x00,
+          data
+        )
+        .then((apduResponse) => {
+          response = apduResponse;
+        })
+    ).then(() => {
+      const v = response[0];
+      const r = response.slice(1, 1 + 32).toString("hex");
+      const s = response.slice(1 + 32, 1 + 32 + 32).toString("hex");
+      return {
+        v,
+        r,
+        s,
+      };
+    });
   }
 
   private pathToBuffer(originalPath: string) {

@@ -1,6 +1,6 @@
 {
   "name": "@fluent-wallet/hw-app-conflux",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Ledger Hardware Wallet Conflux Application API",
   "keywords": [
     "Ledger",
@@ -31,7 +31,7 @@
     "@ledgerhq/logs": "^6.10.0",
     "axios": "^0.24.0",
     "bip32-path": "^0.4.2",
-    "js-conflux-sdk": "^2.0.0-beta.10"
+    "js-conflux-sdk": "1.7.3"
   },
   "scripts": {
     "clean": "rm -rf lib/",
