@@ -21,6 +21,9 @@ Ledger Hardware Wallet Conflux JavaScript bindings.
     - [signTransaction](#signtransaction)
       - [Parameters](#parameters-2)
       - [Examples](#examples-2)
+    - [signPersonalMessage](#signpersonalmessage)
+      - [Parameters](#parameters-3)
+      - [Examples](#examples-3)
 
 
 ### Conflux
@@ -73,4 +76,23 @@ cfx.signTransaction("44'/503'/0'/0/0", "0xeb1284561f61b9831e84809410109fc8df2830
 ```
 
 Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)<{s: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String), v: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String), r: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)}>** 
+
+#### signPersonalMessage
+
+You can sign a message  and retrieve v, r, s given the message and the BIP 32 path of the account to sign.
+
+##### Parameters
+
+*   `path` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** 
+*   `messageHex` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** 
+
+##### Examples
+
+```javascript
+cfx.signPersonalMessage("44'/503'/0'/0/0", Buffer.from("test").toString("hex")).then(result => {
+console.log(result);
+})
+```
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)<{v: [number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number), s: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String), r: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)}>** 
 
