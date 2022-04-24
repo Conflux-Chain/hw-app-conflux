@@ -1,6 +1,6 @@
 {
   "name": "@fluent-wallet/hw-app-conflux",
-  "version": "0.0.5",
+  "version": "0.0.8",
   "description": "Ledger Hardware Wallet Conflux Application API",
   "keywords": [
     "Ledger",
@@ -22,6 +22,7 @@
     "access": "public"
   },
   "main": "lib/Conflux.js",
+  "module": "lib-es/Conflux.js",
   "types": "lib/Conflux.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
@@ -35,7 +36,7 @@
   },
   "scripts": {
     "clean": "rm -rf lib/",
-    "build": "yarn tsc -p tsconfig.json"
+    "build": "yarn tsc -p tsconfig.json && tsc -m ES6 --outDir lib-es"
   },
   "devDependencies": {
     "ts-jest": "^27.1.1",
