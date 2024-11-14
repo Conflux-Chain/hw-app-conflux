@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@ledgerhq/hw-transport':
-        specifier: ^6.11.2
+        specifier: ^6.31.4
         version: 6.31.4
       bip32-path:
         specifier: ^0.4.2
