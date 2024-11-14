@@ -1,4 +1,9 @@
-import { foreach, splitPath } from "./utils";
+import {
+  foreach,
+  isLegacyVersion,
+  splitMessage,
+  splitPath,
+} from "./utils";
 import type Transport from "@ledgerhq/hw-transport";
 import { sign, format } from "js-conflux-sdk";
 import BIPPath from "bip32-path";
@@ -11,6 +16,14 @@ const remapTransactionRelatedErrors = (e) => {
   }
 
   return e;
+};
+const CLA = 0xe0;
+const P1 = {
+  first: 0x00,
+};
+const P2 = {
+  more: 0x80,
+  last: 0x00,
 };
 
 const INS = {
@@ -106,10 +119,9 @@ export default class Conflux {
           .toString("hex"); // remove the prefix:04, because 04 means the uncompressed public key
 
         const address = format.address(
-          "0x" +
-            sign["publicKeyToAddress"](Buffer.from(publicKey, "hex")).toString(
-              "hex"
-            ),
+          `0x${sign["publicKeyToAddress"](
+            Buffer.from(publicKey, "hex")
+          ).toString("hex")}`,
           this.chainId
         ); //CIP-37 address
         let chainCode;
@@ -130,12 +142,7 @@ export default class Conflux {
       });
   }
 
-  /**
-   * You can sign a transaction and retrieve v, r, s given the raw transaction and the BIP 32 path of the account to sign
-   * @example
-   cfx.signTransaction("44'/503'/0'/0/0", "e8018504e3b292008252089428ee52a8f3d6e5d15f8b131996950d7f296c7952872bd72a2487400080").then(result => ...)
-   */
-  async signTransaction(
+  async _legacy_signTransaction(
     path: string,
     rawTxHex: string
   ): Promise<{
@@ -199,7 +206,81 @@ export default class Conflux {
     );
   }
 
-  async getAppConfiguration(): Promise<{
+  async _signTransaction(
+    path: string,
+    rawTxHex: string
+  ): Promise<{
+    s: string;
+    v: string;
+    r: string;
+  }> {
+    const rawTx = Buffer.from(rawTxHex, "hex");
+    const paths = splitPath(path);
+    const derivationPathBuff = Buffer.alloc(1 + paths.length * 4);
+    derivationPathBuff[0] = paths.length;
+    paths.forEach((element, index) => {
+      derivationPathBuff.writeUInt32BE(element, 1 + 4 * index);
+    });
+    // send bip32
+    await this.transport.send(
+      CLA,
+      INS.SIGN_TX,
+      P1.first,
+      P2.more,
+      derivationPathBuff
+    );
+
+    const payloadChunks = splitMessage(rawTx, 255);
+    // send data chunks
+    if (payloadChunks.length > 1) {
+      for (let i = 0; i < payloadChunks.length - 1; i++) {
+        const chunk = payloadChunks[i];
+        await this.transport.send(CLA, INS.SIGN_TX, i + 1, P2.more, chunk);
+      }
+    }
+
+    const response = await this.transport.send(
+      CLA,
+      INS.SIGN_TX,
+      Math.max(payloadChunks.length - 1, 1),
+      P2.last,
+      payloadChunks[payloadChunks.length - 1]
+    );
+
+    const response_byte: number = response.subarray(0, 1)[0];
+    const v = response_byte.toString(16);
+    const r = response.subarray(1, 1 + 32).toString("hex");
+    const s = response.subarray(1 + 32, 1 + 32 + 32).toString("hex");
+    return {
+      v,
+      r,
+      s,
+    };
+  }
+
+  /**
+   * You can sign a transaction and retrieve v, r, s given the raw transaction and the BIP 32 path of the account to sign
+   * @example
+   cfx.signTransaction("44'/503'/0'/0/0", "e8018504e3b292008252089428ee52a8f3d6e5d15f8b131996950d7f296c7952872bd72a2487400080").then(result => ...)
+   */
+  async signTransaction(
+    path: string,
+    rawTxHex: string
+  ): Promise<{
+    s: string;
+    v: string;
+    r: string;
+  }> {
+    const { version } = await this._getAppConfiguration();
+
+    const isLegacy = isLegacyVersion(version);
+
+    if (isLegacy) return this._legacy_signTransaction(path, rawTxHex);
+
+    return this._signTransaction(path, rawTxHex);
+  }
+
+  async _getAppConfiguration(): Promise<{
     name: string;
     version: string;
     flags: number | Buffer;
@@ -223,6 +304,13 @@ export default class Conflux {
       version,
       flags,
     };
+  }
+  async getAppConfiguration(): Promise<{
+    name: string;
+    version: string;
+    flags: number | Buffer;
+  }> {
+    return this._getAppConfiguration();
   }
 
   /**
