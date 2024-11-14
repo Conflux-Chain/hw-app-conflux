@@ -206,7 +206,7 @@ export default class Conflux {
     );
   }
 
-  async _1559_signTransaction(
+  async _signTransaction(
     path: string,
     rawTxHex: string
   ): Promise<{
@@ -277,7 +277,7 @@ export default class Conflux {
 
     if (isLegacy) return this._legacy_signTransaction(path, rawTxHex);
 
-    return this._1559_signTransaction(path, rawTxHex);
+    return this._signTransaction(path, rawTxHex);
   }
 
   async _getAppConfiguration(): Promise<{
