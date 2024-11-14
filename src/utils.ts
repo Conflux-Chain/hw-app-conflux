@@ -102,3 +102,24 @@ export function asyncWhile<T>(
 
   return Promise.resolve([]).then(iterate);
 }
+
+export function isLegacyVersion(version: string): boolean {
+  const parts = version.split(".");
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  const major = Number.parseInt(parts[0], 10);
+
+  // the legacy version is 1.x.x
+
+  if (major === 1) return true;
+
+  return false;
+}
+
+export function splitMessage(message: Buffer, maxSize: number) {
+  return Array.from({ length: Math.ceil(message.length / maxSize) }, (_, i) =>
+    message.subarray(i * maxSize, (i + 1) * maxSize)
+  );
+}
