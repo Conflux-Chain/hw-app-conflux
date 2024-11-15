@@ -73,7 +73,7 @@ export default class Conflux {
   /**
    * get Conflux address for a given BIP 32 path.
    * @param path a path in BIP 32 format
-   * @option boolAddress optionally enable or not the display the address
+   * @option boolDisplay optionally enable or not the display
    * @option boolChaincode optionally enable or not the chaincode request
    * @return an object with a publicKey, address and (optionally) chainCode
    * @example
@@ -82,7 +82,7 @@ export default class Conflux {
    */
   getAddress(
     path: string,
-    boolAddress?: boolean,
+    boolDisplay?: boolean,
     boolChaincode?: boolean
   ): Promise<{
     publicKey: string;
@@ -98,7 +98,7 @@ export default class Conflux {
     });
 
     //chainID buffer
-    if (boolAddress) {
+    if (boolDisplay) {
       const chainIdBuffer = Buffer.alloc(4);
       chainIdBuffer.writeUInt32BE(this.chainId);
       buffer = Buffer.concat([buffer, chainIdBuffer]);
@@ -108,7 +108,7 @@ export default class Conflux {
       .send(
         0xe0,
         INS.GET_ADDRESS,
-        boolAddress ? 0x01 : 0x00,
+        boolDisplay ? 0x01 : 0x00,
         boolChaincode ? 0x01 : 0x00,
         buffer
       )
@@ -142,7 +142,7 @@ export default class Conflux {
       });
   }
 
-  async _legacy_signTransaction(
+ private async _legacy_signTransaction(
     path: string,
     rawTxHex: string
   ): Promise<{
@@ -206,7 +206,7 @@ export default class Conflux {
     );
   }
 
-  async _signTransaction(
+ private async _signTransaction(
     path: string,
     rawTxHex: string
   ): Promise<{
@@ -280,7 +280,7 @@ export default class Conflux {
     return this._signTransaction(path, rawTxHex);
   }
 
-  async _getAppConfiguration(): Promise<{
+  private async _getAppConfiguration(): Promise<{
     name: string;
     version: string;
     flags: number | Buffer;
