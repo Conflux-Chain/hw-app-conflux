@@ -1,9 +1,4 @@
-import {
-  foreach,
-  isLegacyVersion,
-  splitMessage,
-  splitPath,
-} from "./utils";
+import { foreach, isLegacyVersion, splitMessage, splitPath } from "./utils";
 import type Transport from "@ledgerhq/hw-transport";
 import { sign, format } from "js-conflux-sdk";
 import BIPPath from "bip32-path";
@@ -142,7 +137,7 @@ export default class Conflux {
       });
   }
 
- private async _legacy_signTransaction(
+  private async _legacy_signTransaction(
     path: string,
     rawTxHex: string
   ): Promise<{
@@ -206,7 +201,7 @@ export default class Conflux {
     );
   }
 
- private async _signTransaction(
+  private async _signTransaction(
     path: string,
     rawTxHex: string
   ): Promise<{
