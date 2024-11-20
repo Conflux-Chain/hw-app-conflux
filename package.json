@@ -31,9 +31,11 @@
   },
   "scripts": {
     "clean": "rm -rf lib/",
-    "build": "yarn tsc -p tsconfig.json && tsc -m ES6 --outDir lib-es"
+    "build": "yarn tsc -p tsconfig.json && tsc -m ES6 --outDir lib-es",
+    "publish": "pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.9",
     "@ledgerhq/hw-transport-mocker": "^6.29.4",
     "js-conflux-sdk": "^2.4.11",
     "ts-jest": "^27.1.1",
