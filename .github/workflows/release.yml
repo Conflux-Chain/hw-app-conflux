@@ -22,10 +22,10 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-            version: 9
-            run_install: |
-                - recursive: true
-                args: [--frozen-lockfile, --strict-peer-dependencies]
+          version: 9
+          run_install: |
+            - recursive: true
+              args: [--frozen-lockfile, --strict-peer-dependencies]
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
