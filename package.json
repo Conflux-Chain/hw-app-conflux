@@ -24,6 +24,13 @@
   "main": "lib/Conflux.js",
   "module": "lib-es/Conflux.js",
   "types": "lib/Conflux.d.ts",
+  "files": [
+    "lib/",
+    "lib-es/",
+    "src/",
+    "CHANGELOG.md",
+    "README.md"
+  ],
   "license": "Apache-2.0",
   "dependencies": {
     "@ledgerhq/hw-transport": "^6.31.4",
@@ -31,7 +38,7 @@
   },
   "scripts": {
     "clean": "rm -rf lib/",
-    "build": "yarn tsc -p tsconfig.json && tsc -m ES6 --outDir lib-es",
+    "build": "tsc -p tsconfig.json && tsc -m ES6 --outDir lib-es",
     "changeset:publish": "pnpm build && changeset publish"
   },
   "devDependencies": {
