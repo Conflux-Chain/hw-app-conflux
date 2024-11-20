@@ -39,7 +39,7 @@
   "scripts": {
     "clean": "rm -rf lib/",
     "build": "tsc -p tsconfig.json && tsc -m ES6 --outDir lib-es",
-    "changeset:publish": "pnpm build && changeset publish"
+    "changeset:publish": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
