@@ -324,56 +324,43 @@ export default class Conflux {
     r: string;
   }> {
     const paths = splitPath(path);
-    let offset = 0;
     const message = Buffer.from(messageHex, "hex");
-    const toSend: Buffer[] = [];
-    let response;
+    const pathBuffer = Buffer.alloc(1 + paths.length * 4);
+    pathBuffer[0] = paths.length;
+    paths.forEach((element, index) => {
+      pathBuffer.writeUInt32BE(element, 1 + 4 * index);
+    });
 
-    while (offset !== message.length) {
-      const maxChunkSize =
-        offset === 0 ? 150 - 1 - paths.length * 4 - 4 - 4 : 150;
-      const chunkSize =
-        offset + maxChunkSize > message.length
-          ? message.length - offset
-          : maxChunkSize;
-      const buffer = Buffer.alloc(
-        offset === 0 ? 1 + paths.length * 4 + 4 + 4 + chunkSize : chunkSize
-      );
+    const maxChunkSize = 255;
+    const messageChunks: Buffer[] = [];
 
-      if (offset === 0) {
-        buffer[0] = paths.length;
-        paths.forEach((element, index) => {
-          buffer.writeUInt32BE(element, 1 + 4 * index);
-        });
-        buffer.writeUInt32BE(this.chainId, 1 + paths.length * 4);
-        buffer.writeUInt32BE(message.length, 1 + 4 * paths.length + 4);
-        message.copy(
-          buffer,
-          1 + 4 * paths.length + 4 + 4,
-          offset,
-          offset + chunkSize
-        );
-      } else {
-        message.copy(buffer, 0, offset, offset + chunkSize);
-      }
-
-      toSend.push(buffer);
-      offset += chunkSize;
+    for (let offset = 0; offset < message.length; offset += maxChunkSize) {
+      const chunkSize = Math.min(maxChunkSize, message.length - offset);
+      const chunk = Buffer.alloc(chunkSize);
+      message.copy(chunk, 0, offset, offset + chunkSize);
+      messageChunks.push(chunk);
     }
 
-    return foreach(toSend, (data, i) =>
-      this.transport
-        .send(
-          0xe0,
-          INS.SIGN_PERSONAL_MESSAGE,
-          i === 0 ? 0x00 : 0x80,
-          0x00,
-          data
-        )
+    // By now the conflux app not support personal-sign message with more than 0x20 chunks
+    // https://github.com/Conflux-Chain/app-conflux/blob/develop/docs/APDU.md#request-format-3
+    if (messageChunks.length > 0x20) {
+      throw new Error(
+        "Message too long: firmware allows at most 0x20 personal-sign chunks"
+      );
+    }
+
+    const chunks = [pathBuffer, ...messageChunks];
+    let response;
+
+    return foreach(chunks, (data, index) => {
+      const p1 = index === 0 ? 0x00 : index;
+      const p2 = index === chunks.length - 1 ? 0x00 : 0x80;
+      return this.transport
+        .send(0xe0, INS.SIGN_PERSONAL_MESSAGE, p1, p2, data)
         .then((apduResponse) => {
           response = apduResponse;
-        })
-    ).then(() => {
+        });
+    }).then(() => {
       const v = response[0];
       const r = response.slice(1, 1 + 32).toString("hex");
       const s = response.slice(1 + 32, 1 + 32 + 32).toString("hex");
