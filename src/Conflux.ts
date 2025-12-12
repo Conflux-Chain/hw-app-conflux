@@ -3,6 +3,14 @@ import type Transport from "@ledgerhq/hw-transport";
 import { sign, format } from "js-conflux-sdk";
 import BIPPath from "bip32-path";
 
+import type {
+  EIP712FieldDefinition,
+  EIP712ImplementationEntry,
+} from "./eip712/types";
+import { EIP712_P1, EIP712_P2, sendEIP712Payload } from "./eip712/transport";
+import { encodeFieldDefinition, normalizeFieldValue } from "./eip712/codec";
+import { prepareEIP712Payload, type EIP712TypedData } from "./eip712/typedData";
+
 const remapTransactionRelatedErrors = (e) => {
   if (e && e.statusCode === 0x6a80) {
     throw new Error(
@@ -25,6 +33,9 @@ const INS = {
   GET_ADDRESS: 0x02,
   SIGN_TX: 0x03,
   SIGN_PERSONAL_MESSAGE: 0x04,
+  SIGN_EIP712: 0x0a,
+  EIP712_SEND_STRUCT_DEFINITION: 0x0b,
+  EIP712_SEND_STRUCT_IMPLEMENTATION: 0x0c,
 };
 
 const CHAINID = {
@@ -60,6 +71,7 @@ export default class Conflux {
         "signTransaction",
         "getAppConfiguration",
         "signPersonalMessage",
+        "signEIP712Message",
       ],
       scrambleKey
     );
@@ -85,12 +97,7 @@ export default class Conflux {
     chainCode?: string;
   }> {
     //path buffer
-    const paths = splitPath(path);
-    let buffer = Buffer.alloc(1 + paths.length * 4);
-    buffer[0] = paths.length;
-    paths.forEach((element, index) => {
-      buffer.writeUInt32BE(element, 1 + 4 * index);
-    });
+    let buffer = this.derivationPathToBuffer(path);
 
     //chainID buffer
     if (boolDisplay) {
@@ -210,12 +217,7 @@ export default class Conflux {
     r: string;
   }> {
     const rawTx = Buffer.from(rawTxHex, "hex");
-    const paths = splitPath(path);
-    const derivationPathBuff = Buffer.alloc(1 + paths.length * 4);
-    derivationPathBuff[0] = paths.length;
-    paths.forEach((element, index) => {
-      derivationPathBuff.writeUInt32BE(element, 1 + 4 * index);
-    });
+    const derivationPathBuff = this.derivationPathToBuffer(path);
     // send bip32
     await this.transport.send(
       CLA,
@@ -323,25 +325,11 @@ export default class Conflux {
     s: string;
     r: string;
   }> {
-    const paths = splitPath(path);
     const message = Buffer.from(messageHex, "hex");
-    const pathBuffer = Buffer.alloc(1 + paths.length * 4);
-    pathBuffer[0] = paths.length;
-    paths.forEach((element, index) => {
-      pathBuffer.writeUInt32BE(element, 1 + 4 * index);
-    });
+    const pathBuffer = this.derivationPathToBuffer(path);
+    const messageChunks = splitMessage(message, 255);
 
-    const maxChunkSize = 255;
-    const messageChunks: Buffer[] = [];
-
-    for (let offset = 0; offset < message.length; offset += maxChunkSize) {
-      const chunkSize = Math.min(maxChunkSize, message.length - offset);
-      const chunk = Buffer.alloc(chunkSize);
-      message.copy(chunk, 0, offset, offset + chunkSize);
-      messageChunks.push(chunk);
-    }
-
-    // By now the conflux app not support personal-sign message with more than 0x20 chunks
+    // Firmware allows at most 0x20 personal-sign message chunks
     // https://github.com/Conflux-Chain/app-conflux/blob/develop/docs/APDU.md#request-format-3
     if (messageChunks.length > 0x20) {
       throw new Error(
@@ -390,5 +378,158 @@ export default class Conflux {
       buf.writeUInt32BE(num, 1 + i * 4);
     }
     return buf;
+  }
+
+  /**
+   * Encodes derivation path using legacy splitPath rules.
+   * This avoids auto-hardening and matches existing APIs.
+   */
+  private derivationPathToBuffer(path: string): Buffer {
+    const paths = splitPath(path);
+    const buf = Buffer.alloc(1 + paths.length * 4);
+    buf[0] = paths.length;
+    paths.forEach((element, index) => {
+      buf.writeUInt32BE(element, 1 + 4 * index);
+    });
+    return buf;
+  }
+
+  private async _sendEIP712StructDefinition(
+    structName: string,
+    fields: EIP712FieldDefinition[]
+  ): Promise<void> {
+    if (!structName) throw new Error("Struct name is required");
+
+    const nameBuf = Buffer.from(structName, "utf8");
+    if (nameBuf.length === 0 || nameBuf.length > 0xff) {
+      throw new Error("Struct name must be between 1 and 255 bytes");
+    }
+
+    // Definition APDU must be sent as a single complete chunk.
+    await this.transport.send(
+      CLA,
+      INS.EIP712_SEND_STRUCT_DEFINITION,
+      EIP712_P1.complete,
+      EIP712_P2.structName,
+      nameBuf
+    );
+
+    for (const field of fields) {
+      const payload = encodeFieldDefinition(field);
+      if (payload.length > 0xff) {
+        throw new Error(`Field definition for ${field.name} exceeds 255 bytes`);
+      }
+
+      await this.transport.send(
+        CLA,
+        INS.EIP712_SEND_STRUCT_DEFINITION,
+        EIP712_P1.complete,
+        EIP712_P2.structField,
+        payload
+      );
+    }
+  }
+
+  private async _sendEIP712StructImplementation(
+    entries: EIP712ImplementationEntry[]
+  ): Promise<void> {
+    if (!entries.length) {
+      throw new Error("At least one implementation entry is required");
+    }
+
+    let rootDefined = false;
+
+    for (const entry of entries) {
+      if (entry.type === "root") {
+        rootDefined = true;
+
+        const rootNameBuf = Buffer.from(entry.name, "utf8");
+        if (rootNameBuf.length === 0 || rootNameBuf.length > 0xff) {
+          throw new Error("Root struct name must be between 1 and 255 bytes");
+        }
+
+        await this.transport.send(
+          CLA,
+          INS.EIP712_SEND_STRUCT_IMPLEMENTATION,
+          EIP712_P1.complete,
+          EIP712_P2.structName,
+          rootNameBuf
+        );
+        continue;
+      }
+
+      if (!rootDefined) {
+        throw new Error(
+          "Root struct must be set before sending arrays or fields"
+        );
+      }
+
+      if (entry.type === "array") {
+        if (entry.size < 0 || entry.size > 0xff) {
+          throw new Error("Array size must be in [0, 255]");
+        }
+        await sendEIP712Payload(
+          this.transport,
+          CLA,
+          INS.EIP712_SEND_STRUCT_IMPLEMENTATION,
+          EIP712_P2.array,
+          Buffer.from([entry.size])
+        );
+        continue;
+      }
+
+      const value = normalizeFieldValue(entry.value);
+      if (value.length > 0xffff) {
+        throw new Error("Field value exceeds maximum length (65535 bytes)");
+      }
+
+      const prefix = Buffer.alloc(2);
+      prefix.writeUInt16BE(value.length);
+      await sendEIP712Payload(
+        this.transport,
+        CLA,
+        INS.EIP712_SEND_STRUCT_IMPLEMENTATION,
+        EIP712_P2.structField,
+        Buffer.concat([prefix, value])
+      );
+    }
+  }
+  private async finalizeEIP712Signature(path: string): Promise<{
+    v: number;
+    r: string;
+    s: string;
+  }> {
+    const pathBuffer = this.derivationPathToBuffer(path);
+    const response = await this.transport.send(
+      CLA,
+      INS.SIGN_EIP712,
+      EIP712_P1.complete,
+      EIP712_P2.signFullImplementation,
+      pathBuffer
+    );
+
+    const v = response[0];
+    const r = response.subarray(1, 33).toString("hex");
+    const s = response.subarray(33, 65).toString("hex");
+    return { v, r, s };
+  }
+
+  async signEIP712Message(
+    path: string,
+    typedData: EIP712TypedData
+  ): Promise<{
+    v: number;
+    r: string;
+    s: string;
+  }> {
+    if (typedData) {
+      const { definitions, implementation } = prepareEIP712Payload(typedData);
+      for (const def of definitions) {
+        await this._sendEIP712StructDefinition(def.name, def.fields);
+      }
+      await this._sendEIP712StructImplementation(implementation);
+    }
+
+    return this.finalizeEIP712Signature(path);
   }
 }
