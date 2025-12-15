@@ -177,7 +177,7 @@ describe("signPersonalMessage", () => {
         => e004008015058000002c800001f7800000000000000000000000
         <= 9000
         => e00401000c48656c6c6f2c20576f726c64
-        <= 00cff013fd560a35bc0660619d8ec967186fc72deadbd32b63b3d08066e476cc4455c491b4037627b841c3a15d810510d00cabf390cb2c56151437e5f7d81401fe9000
+        <= 00f6ba44a8e2a048a6403284bb60d6c283f1e16fd70c2a6d17116e3d451b5ee61e5fdd13adaeb82cb14218400184f33dbc16100bc642538cf810115755ad4928299000
         `)
     );
     const cfx = new Conflux(transport, 1029);
@@ -188,22 +188,22 @@ describe("signPersonalMessage", () => {
 
     expect(result).toEqual({
       v: 0,
-      r: "cff013fd560a35bc0660619d8ec967186fc72deadbd32b63b3d08066e476cc44",
-      s: "55c491b4037627b841c3a15d810510d00cabf390cb2c56151437e5f7d81401fe",
+      r: "f6ba44a8e2a048a6403284bb60d6c283f1e16fd70c2a6d17116e3d451b5ee61e",
+      s: "5fdd13adaeb82cb14218400184f33dbc16100bc642538cf810115755ad492829",
     });
   });
 
   test("multi chunk message", async () => {
     const transport = await openTransportReplayer(
       RecordStore.fromString(`
-        => e004008015058000002c800001f7800000000000000000000000
-        <= 9000
-        => e0040180ff68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c
-        <= 9000
-        => e0040280ff6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e
-        <= 9000
-        => e00403005a68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e
-        <= 00dd62ee977c4f7ab65d172a02d961c1c4495a9bb29df1f309eb62594fbdaa84973a1666294fe72c1bf750da6d975dc3a0b2aec98cd7fd0c8bec49f1d56a5d67ad9000
+          => e004008015058000002c800001f7800000000000000000000000
+          <= 9000
+          => e0040180ff68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c
+          <= 9000
+          => e0040280ff6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e
+          <= 9000
+          => e00403005a68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e
+          <= 01a8fbe86360410e326a046c573590d7acb7bf7c506f7514599b9c692830380464290b3a0a7b2a99a60b5ee4d06c0405e48bb561c2d0dba002c63239a95b9152419000
         `)
     );
     const cfx = new Conflux(transport, 1029);
@@ -212,9 +212,9 @@ describe("signPersonalMessage", () => {
       "68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e68656c6c6f2e"
     );
     expect(result).toEqual({
-      v: 0x0,
-      r: "dd62ee977c4f7ab65d172a02d961c1c4495a9bb29df1f309eb62594fbdaa8497",
-      s: "3a1666294fe72c1bf750da6d975dc3a0b2aec98cd7fd0c8bec49f1d56a5d67ad",
+      v: 0x1,
+      r: "a8fbe86360410e326a046c573590d7acb7bf7c506f7514599b9c692830380464",
+      s: "290b3a0a7b2a99a60b5ee4d06c0405e48bb561c2d0dba002c63239a95b915241",
     });
   });
 
@@ -541,6 +541,122 @@ describe("signPersonalMessage", () => {
         v: 0,
         r: "7dcc39388d0637fb68286e7aeb506ace412688f7c62a62ca141b1f1ebb89912b",
         s: "544946da2848c7b5ce47b50e21e279cb49f25dbf597444baf764d20b802e32cb",
+      });
+    });
+
+    test("EIP712 (cip23 simple mail data)", async () => {
+      const transport = await openTransportReplayer(
+        RecordStore.fromString(`
+            => e00b00000b4349503233446f6d61696e
+            <= 9000
+            => e00b00ff0605046e616d65
+            <= 9000
+            => e00b00ff09050776657273696f6e
+            <= 9000
+            => e00b00ff0a422007636861696e4964
+            <= 9000
+            => e00b00ff130311766572696679696e67436f6e7472616374
+            <= 9000
+            => e00b0000044d61696c
+            <= 9000
+            => e00b00ff0d0006506572736f6e0466726f6d
+            <= 9000
+            => e00b00ff0b0006506572736f6e02746f
+            <= 9000
+            => e00b00ff0a0508636f6e74656e7473
+            <= 9000
+            => e00b000006506572736f6e
+            <= 9000
+            => e00b00ff0605046e616d65
+            <= 9000
+            => e00b00ff0b8301000777616c6c657473
+            <= 9000
+            => e00c00000b4349503233446f6d61696e
+            <= 9000
+            => e00c00ff0d000b53696d706c65204d61696c
+            <= 9000
+            => e00c00ff03000131
+            <= 9000
+            => e00c00ff03000101
+            <= 9000
+            => e00c00ff160014cccccccccccccccccccccccccccccccccccccccc
+            <= 9000
+            => e00c0000044d61696c
+            <= 9000
+            => e00c00ff050003436f77
+            <= 9000
+            => e00c000f0102
+            <= 9000
+            => e00c00ff160014cd2a3d9f938e13cd947ec05abc7fe734df8dd826
+            <= 9000
+            => e00c00ff160014deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+            <= 9000
+            => e00c00ff050003426f62
+            <= 9000
+            => e00c000f0103
+            <= 9000
+            => e00c00ff160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+            <= 9000
+            => e00c00ff160014b0bdabea57b0bdabea57b0bdabea57b0bdabea57
+            <= 9000
+            => e00c00ff160014b0b0b0b0b0b0b000000000000000000000000000
+            <= 9000
+            => e00c00ff0d000b48656c6c6f2c20426f6221
+            <= 9000
+            => e00a000115058000002c800001f7800000000000000000000000
+            <= 00a338c64634d02a56032f007950c1c6e55ec885ce30cb5d689d3442595e80a7ee240e922e7efc72c3707ec6397f517780f70f16575cb5fd21b10a08bd16316e4d9000
+`)
+      );
+      const cfx = new Conflux(transport, 1029);
+
+      const sig = await cfx.signEIP712Message("44'/503'/0'/0/0", {
+        domain: {
+          chainId: 1,
+          name: "Simple Mail",
+          verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+          version: "1",
+        },
+        message: {
+          contents: "Hello, Bob!",
+          from: {
+            name: "Cow",
+            wallets: [
+              "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
+              "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF",
+            ],
+          },
+          to: {
+            name: "Bob",
+            wallets: [
+              "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
+              "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57",
+              "0xB0B0b0b0b0b0B000000000000000000000000000",
+            ],
+          },
+        },
+        primaryType: "Mail",
+        types: {
+          CIP23Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+          Mail: [
+            { name: "from", type: "Person" },
+            { name: "to", type: "Person" },
+            { name: "contents", type: "string" },
+          ],
+          Person: [
+            { name: "name", type: "string" },
+            { name: "wallets", type: "address[]" },
+          ],
+        },
+      });
+      expect(sig).toEqual({
+        v: 0,
+        r: "a338c64634d02a56032f007950c1c6e55ec885ce30cb5d689d3442595e80a7ee",
+        s: "240e922e7efc72c3707ec6397f517780f70f16575cb5fd21b10a08bd16316e4d",
       });
     });
   });
