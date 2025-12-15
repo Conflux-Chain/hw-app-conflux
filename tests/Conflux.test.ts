@@ -228,4 +228,320 @@ describe("signPersonalMessage", () => {
       )
     ).rejects.toThrow(/Message too long/);
   });
+
+  describe("EIP712 integration", () => {
+    test("EIP712 (fixed bytes sample)", async () => {
+      const transport = await openTransportReplayer(
+        RecordStore.fromString(`
+            => e00b00000c454950373132446f6d61696e
+            <= 9000
+            => e00b00ff0605046e616d65
+            <= 9000
+            => e00b00ff09050776657273696f6e
+            <= 9000
+            => e00b00ff0a422007636861696e4964
+            <= 9000
+            => e00b00ff130311766572696679696e67436f6e7472616374
+            <= 9000
+            => e00b00000454657374
+            <= 9000
+            => e00b00ff0746010476616c31
+            <= 9000
+            => e00b00ff0746040476616c34
+            <= 9000
+            => e00b00ff0746080476616c38
+            <= 9000
+            => e00b00ff0846100576616c3136
+            <= 9000
+            => e00b00ff0846200576616c3332
+            <= 9000
+            => e00c00000c454950373132446f6d61696e
+            <= 9000
+            => e00c00ff12001046697865642062797465732074657374
+            <= 9000
+            => e00c00ff03000131
+            <= 9000
+            => e00c00ff03000101
+            <= 9000
+            => e00c00ff160014cccccccccccccccccccccccccccccccccccccccc
+            <= 9000
+            => e00c00000454657374
+            <= 9000
+            => e00c00ff030001ae
+            <= 9000
+            => e00c00ff060004973bb640
+            <= 9000
+            => e00c00ff0a0008ac3608fa074a22a0
+            <= 9000
+            => e00c00ff12001024e62129cc3ed3df6f8f3cd1e95b812a
+            <= 9000
+            => e00c00ff220020b5d679d10bf948280080e802ce9fde218b0f8c442c47bf4ab05657d8da04d1da
+            <= 9000
+            => e00a000115058000002c800001f7800000000000000000000000
+            <= 01b87c41d528761bb58bf571fdb7305e0872f187e445f1f7a53c4ee90ab04b9998230f53d5a182ed33c24ba8dd33abea67caba9d17ac7313c501dce2d55782a2fa9000
+        `)
+      );
+      const cfx = new Conflux(transport, 1029);
+
+      const sig = await cfx.signEIP712Message("44'/503'/0'/0/0", {
+        domain: {
+          chainId: 1,
+          name: "Fixed bytes test",
+          verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+          version: "1",
+        },
+        message: {
+          val1: "0xae",
+          val4: "0x973bb640",
+          val8: "0xac3608fa074a22a0",
+          val16: "0x24e62129cc3ed3df6f8f3cd1e95b812a",
+          val32:
+            "0xb5d679d10bf948280080e802ce9fde218b0f8c442c47bf4ab05657d8da04d1da",
+        },
+        primaryType: "Test",
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+          Test: [
+            { name: "val1", type: "bytes1" },
+            { name: "val4", type: "bytes4" },
+            { name: "val8", type: "bytes8" },
+            { name: "val16", type: "bytes16" },
+            { name: "val32", type: "bytes32" },
+          ],
+        },
+      });
+      expect(sig).toEqual({
+        v: 1,
+        r: "b87c41d528761bb58bf571fdb7305e0872f187e445f1f7a53c4ee90ab04b9998",
+        s: "230f53d5a182ed33c24ba8dd33abea67caba9d17ac7313c501dce2d55782a2fa",
+      });
+    });
+
+    test("EIP712 (signed ints data)", async () => {
+      const transport = await openTransportReplayer(
+        RecordStore.fromString(`
+            => e00b00000c454950373132446f6d61696e
+            <= 9000
+            => e00b00ff0605046e616d65
+            <= 9000
+            => e00b00ff09050776657273696f6e
+            <= 9000
+            => e00b00ff0a422007636861696e4964
+            <= 9000
+            => e00b00ff130311766572696679696e67436f6e7472616374
+            <= 9000
+            => e00b00000454657374
+            <= 9000
+            => e00b00ff094120066e6567323536
+            <= 9000
+            => e00b00ff09412006706f73323536
+            <= 9000
+            => e00b00ff094110066e6567313238
+            <= 9000
+            => e00b00ff09411006706f73313238
+            <= 9000
+            => e00b00ff084108056e65673634
+            <= 9000
+            => e00b00ff08410805706f733634
+            <= 9000
+            => e00b00ff084104056e65673332
+            <= 9000
+            => e00b00ff08410405706f733332
+            <= 9000
+            => e00b00ff084102056e65673136
+            <= 9000
+            => e00b00ff08410205706f733136
+            <= 9000
+            => e00b00ff074101046e656738
+            <= 9000
+            => e00b00ff07410104706f7338
+            <= 9000
+            => e00c00000c454950373132446f6d61696e
+            <= 9000
+            => e00c00ff1200105369676e656420496e74732074657374
+            <= 9000
+            => e00c00ff03000131
+            <= 9000
+            => e00c00ff03000101
+            <= 9000
+            => e00c00ff160014cccccccccccccccccccccccccccccccccccccccc
+            <= 9000
+            => e00c00000454657374
+            <= 9000
+            => e00c00ff220020ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00
+            <= 9000
+            => e00c00ff0400020100
+            <= 9000
+            => e00c00ff120010ffffffffffffffffffffffffffffff80
+            <= 9000
+            => e00c00ff03000180
+            <= 9000
+            => e00c00ff0a0008ffffffffffffffc0
+            <= 9000
+            => e00c00ff03000140
+            <= 9000
+            => e00c00ff060004ffffffe0
+            <= 9000
+            => e00c00ff03000120
+            <= 9000
+            => e00c00ff040002fff0
+            <= 9000
+            => e00c00ff03000110
+            <= 9000
+            => e00c00ff030001f8
+            <= 9000
+            => e00c00ff03000108
+            <= 9000
+            => e00a000115058000002c800001f7800000000000000000000000
+            <= 00345e026331aae6f3e33801d984a07f4783b1588a508834565c64e99851b07b69618c7d100876f519b74df6d8c939d6da1d3ffdf43a11d41df14aae41d3421b8b9000
+        `)
+      );
+      const cfx = new Conflux(transport, 1029);
+
+      const sig = await cfx.signEIP712Message("44'/503'/0'/0/0", {
+        domain: {
+          chainId: 1,
+          name: "Signed Ints test",
+          verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+          version: "1",
+        },
+        message: {
+          neg256: "-256",
+          pos256: "256",
+          neg128: "-128",
+          pos128: "128",
+          neg64: "-64",
+          pos64: "64",
+          neg32: "-32",
+          pos32: "32",
+          neg16: "-16",
+          pos16: "16",
+          neg8: "-8",
+          pos8: "8",
+        },
+        primaryType: "Test",
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+          Test: [
+            { name: "neg256", type: "int256" },
+            { name: "pos256", type: "int256" },
+            { name: "neg128", type: "int128" },
+            { name: "pos128", type: "int128" },
+            { name: "neg64", type: "int64" },
+            { name: "pos64", type: "int64" },
+            { name: "neg32", type: "int32" },
+            { name: "pos32", type: "int32" },
+            { name: "neg16", type: "int16" },
+            { name: "pos16", type: "int16" },
+            { name: "neg8", type: "int8" },
+            { name: "pos8", type: "int8" },
+          ],
+        },
+      });
+      expect(sig).toEqual({
+        v: 0,
+        r: "345e026331aae6f3e33801d984a07f4783b1588a508834565c64e99851b07b69",
+        s: "618c7d100876f519b74df6d8c939d6da1d3ffdf43a11d41df14aae41d3421b8b",
+      });
+    });
+
+    test("EIP712 (multidimensional arrays-data)", async () => {
+      const transport = await openTransportReplayer(
+        RecordStore.fromString(`
+          => e00b00000c454950373132446f6d61696e
+          <= 9000
+          => e00b00ff0605046e616d65
+          <= 9000
+          => e00b00ff09050776657273696f6e
+          <= 9000
+          => e00b00ff0a422007636861696e4964
+          <= 9000
+          => e00b00ff130311766572696679696e67436f6e7472616374
+          <= 9000
+          => e00b00000454657374
+          <= 9000
+          => e00b00ff0ec201040000000006646570746879
+          <= 9000
+          => e00c00000c454950373132446f6d61696e
+          <= 9000
+          => e00c00ff0c000a44657074682054657374
+          <= 9000
+          => e00c00ff03000131
+          <= 9000
+          => e00c00ff03000101
+          <= 9000
+          => e00c00ff160014cccccccccccccccccccccccccccccccccccccccc
+          <= 9000
+          => e00c00000454657374
+          <= 9000
+          => e00c000f0101
+          <= 9000
+          => e00c000f0102
+          <= 9000
+          => e00c000f0102
+          <= 9000
+          => e00c000f0102
+          <= 9000
+          => e00c00ff03000101
+          <= 9000
+          => e00c00ff03000102
+          <= 9000
+          => e00c000f0101
+          <= 9000
+          => e00c00ff03000103
+          <= 9000
+          => e00c000f0101
+          <= 9000
+          => e00c000f0103
+          <= 9000
+          => e00c00ff03000104
+          <= 9000
+          => e00c00ff03000105
+          <= 9000
+          => e00c00ff03000106
+          <= 9000
+          => e00a000115058000002c800001f7800000000000000000000000
+          <= 007dcc39388d0637fb68286e7aeb506ace412688f7c62a62ca141b1f1ebb89912b544946da2848c7b5ce47b50e21e279cb49f25dbf597444baf764d20b802e32cb9000
+        `)
+      );
+      const cfx = new Conflux(transport, 1029);
+
+      const sig = await cfx.signEIP712Message("44'/503'/0'/0/0", {
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+          Test: [{ type: "uint8[][][][]", name: "depthy" }],
+        },
+        primaryType: "Test",
+        domain: {
+          chainId: 1,
+          name: "Depth Test",
+          verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+          version: "1",
+        },
+        message: {
+          depthy: [[[["1", "2"], ["3"]], [["4", "5", "6"]]]],
+        },
+      });
+      expect(sig).toEqual({
+        v: 0,
+        r: "7dcc39388d0637fb68286e7aeb506ace412688f7c62a62ca141b1f1ebb89912b",
+        s: "544946da2848c7b5ce47b50e21e279cb49f25dbf597444baf764d20b802e32cb",
+      });
+    });
+  });
 });
