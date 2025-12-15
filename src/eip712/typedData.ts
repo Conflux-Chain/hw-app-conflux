@@ -31,6 +31,7 @@ export type PreparedDefinition = {
 };
 
 const EIP712_DOMAIN = "EIP712Domain";
+const CIP23_DOMAIN = "CIP23Domain";
 
 /**
  * Prepares EIP712 typed data for signing by extracting field definitions
@@ -97,9 +98,24 @@ function buildImplementation(
 ): EIP712ImplementationEntry[] {
   const entries: EIP712ImplementationEntry[] = [];
 
-  if (metaMap[EIP712_DOMAIN]) {
-    entries.push({ type: "root", name: EIP712_DOMAIN });
-    entries.push(...encodeStruct(metaMap, EIP712_DOMAIN, typedData.domain));
+  const hasEip712Domain = Boolean(metaMap[EIP712_DOMAIN]);
+  const hasCip23Domain = Boolean(metaMap[CIP23_DOMAIN]);
+
+  if (hasEip712Domain && hasCip23Domain) {
+    throw new Error(
+      "Ambiguous domain: both EIP712Domain and CIP23Domain are present"
+    );
+  }
+
+  const domainRoot = hasEip712Domain
+    ? EIP712_DOMAIN
+    : hasCip23Domain
+    ? CIP23_DOMAIN
+    : null;
+
+  if (domainRoot) {
+    entries.push({ type: "root", name: domainRoot });
+    entries.push(...encodeStruct(metaMap, domainRoot, typedData.domain));
   }
 
   const { primaryType } = typedData;
